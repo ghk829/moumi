@@ -7,7 +7,8 @@
 
 2. pip install -r requirements.txt
 
-3. bash 시랭
+3. bash 실행
 
 export FLASK_APP=app
+
 flask run
