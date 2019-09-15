@@ -12,3 +12,8 @@
 export FLASK_APP=app
 
 flask run
+
+
+# 로컬 테스트 이슈
+
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
