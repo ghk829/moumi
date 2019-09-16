@@ -9,6 +9,7 @@ class ClienSpider(scrapy.Spider):
 
     start_urls = [
         'https://m.clien.net/service/board/jirum?&od=T31&po=0',
+        'http://www.ppomppu.co.kr/zboard/zboard.php?id=ppomppu'
     ]
 
     def parse(self, response):
@@ -18,18 +19,35 @@ class ClienSpider(scrapy.Spider):
 
         results = []
 
+        if response.url.startswith("https://m.clien.net"):
+            css_components = {
+            "items":".list_item.symph-row",
+            "subject":".list_subject",
+            "viewer":".list_hit",
+            "date":".list_time",
+            "comment":".list_reply",
+            "like":".list_symph"
+            }
 
-        css_components = {
-        "items":".list_item.symph-row",
-        "subject":".list_subject",
-        "viewer":".list_hit",
-        "date":".list_time",
-        "comment":".list_reply",
-        "like":".list_symph"
-        }
+            yield from self.parse_clien(response, css_components, now, delta)
 
+        elif response.url.startswith("http://www.ppomppu.co.kr"):
+            css_components = {
+                "items": [".list1",".list0"],
+                "subject": ".list_subject",
+                "viewer": ".list_hit",
+                "date": ".list_time",
+                "comment": ".list_reply",
+                "like": ".list_symph"
+            }
+
+            yield from self.parse_ppom(response, css_components, now, delta)
+
+
+    def parse_clien(self,response,css_components,now,delta):
 
         items = response.css(css_components.get("items"))
+
         for item in items:
 
             result = {}
@@ -100,5 +118,55 @@ class ClienSpider(scrapy.Spider):
 
             yield result
 
-    def parse_reply(self,response):
-        pass
+    def parse_ppom(self,response,css_components,now,delta):
+        items = []
+        for css in css_components.get("items"):
+            items += response.css(css)
+
+        for item in items:
+            result = {}
+            for idx,information in enumerate(item.css("td.list_vspace")):
+
+                if idx ==0:
+                    "아이템 번호"
+                elif idx ==1:
+                    "기타"
+                elif idx ==2:
+                    "저자"
+                elif idx ==3:
+                    "타이틀"
+                    "URL"
+                    href = response.urljoin(information.css("a")[0].attrib['href'])
+                    result['url'] = href
+                    comment = ''.join([e.strip() for e in information.css(".list_comment2")[0].css("::text").extract()])
+                    comment = int(comment)
+                    result['comment'] = comment
+                    if information.css(".list_title"):
+                        result['title'] = ''.join([e.strip() for e in information.css("::text").extract()])
+                    else:
+                        continue
+                elif idx ==4:
+                    "날짜"
+                    date_str = information.css("::text").get().strip()
+                    date_time = parser.parse(date_str)
+                    date = date_time.strftime("%Y-%m-%d")
+                    if now - delta > date_time:
+                        break
+                    result['date'] = date
+
+                elif idx ==5:
+                    "like"
+                    if information.css("::text"):
+                        like= information.css("::text").get().split("-")[0]
+                        like = int(like)
+                    else:
+                        like = 0
+                    result['like'] = like
+                elif idx ==6:
+                    view = information.css("::text").get().strip()
+                    view = int(view)
+                    result['view'] = view
+
+            result['score'] = view * like + comment * 100
+
+            yield result
