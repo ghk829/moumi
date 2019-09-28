@@ -61,7 +61,7 @@ class ClienSpider(scrapy.Spider):
 
             if now - delta > date_time:
                 break
-            result['id'] = "clien"+str(uuid.uuid4())
+            result['id'] = "clien_"+str(uuid.uuid4())
             result['date'] = date
 
             subject = item.css(css_components.get("subject")).pop()
@@ -126,7 +126,7 @@ class ClienSpider(scrapy.Spider):
 
         for item in items:
             result = {}
-            result['id'] = "ppom" + str(uuid.uuid4())
+            result['id'] = "ppom_" + str(uuid.uuid4())
             for idx,information in enumerate(item.css("td.list_vspace")):
 
                 if idx ==0:
