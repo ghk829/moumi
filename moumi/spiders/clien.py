@@ -4,6 +4,7 @@ import datetime
 import dateutil
 from dateutil import parser
 import uuid
+from selenium import webdriver
 
 class ClienSpider(scrapy.Spider):
     name = "clien"
@@ -120,55 +121,64 @@ class ClienSpider(scrapy.Spider):
             yield result
 
     def parse_ppom(self,response,css_components,now,delta):
+        driver = webdriver.PhantomJS("phantomjs")
+        driver.get(response.url)
+        driver.explca(3)
+        from scrapy import Selector
+        selector = Selector(text=driver.page_source)
+
         items = []
         for css in css_components.get("items"):
-            items += response.css(css)
+            items += selector.css(css)
 
         for item in items:
-            result = {}
-            result['id'] = "ppom_" + str(uuid.uuid4())
-            for idx,information in enumerate(item.css("td.list_vspace")):
+            try:
+                result = {}
+                result['id'] = "ppom_" + str(uuid.uuid4())
+                for idx,information in enumerate(item.css("td.list_vspace")):
 
-                if idx ==0:
-                    "아이템 번호"
-                elif idx ==1:
-                    "기타"
-                elif idx ==2:
-                    "저자"
-                elif idx ==3:
-                    "타이틀"
-                    "URL"
-                    href = response.urljoin(information.css("a")[0].attrib['href'])
-                    result['url'] = href
-                    comment = ''.join([e.strip() for e in information.css(".list_comment2")[0].css("::text").extract()])
-                    comment = int(comment)
-                    result['comment'] = comment
-                    if information.css(".list_title"):
-                        result['title'] = ''.join([e.strip() for e in information.css("::text").extract()])
-                    else:
-                        continue
-                elif idx ==4:
-                    "날짜"
-                    date_str = information.css("::text").get().strip()
-                    date_time = parser.parse(date_str)
-                    date = date_time.strftime("%Y-%m-%d")
-                    if now - delta > date_time:
-                        break
-                    result['date'] = date
+                    if idx ==0:
+                        "아이템 번호"
+                    elif idx ==1:
+                        "기타"
+                    elif idx ==2:
+                        "저자"
+                    elif idx ==3:
+                        "타이틀"
+                        "URL"
+                        href = response.urljoin(information.css("a")[0].attrib['href'])
+                        result['url'] = href
+                        comment = ''.join([e.strip() for e in information.css(".list_comment2")[0].css("::text").extract()])
+                        comment = int(comment)
+                        result['comment'] = comment
+                        if information.css(".list_title"):
+                            result['title'] = ''.join([e.strip() for e in information.css("::text").extract()])
+                        else:
+                            continue
+                    elif idx ==4:
+                        "날짜"
+                        date_str = information.css("::text").get().strip()
+                        date_time = parser.parse(date_str)
+                        date = date_time.strftime("%Y-%m-%d")
+                        if now - delta > date_time:
+                            break
+                        result['date'] = date
 
-                elif idx ==5:
-                    "like"
-                    if information.css("::text"):
-                        like= information.css("::text").get().split("-")[0]
-                        like = int(like)
-                    else:
-                        like = 0
-                    result['like'] = like
-                elif idx ==6:
-                    view = information.css("::text").get().strip()
-                    view = int(view)
-                    result['view'] = view
+                    elif idx ==5:
+                        "like"
+                        if information.css("::text"):
+                            like= information.css("::text").get().split("-")[0]
+                            like = int(like)
+                        else:
+                            like = 0
+                        result['like'] = like
+                    elif idx ==6:
+                        view = information.css("::text").get().strip()
+                        view = int(view)
+                        result['view'] = view
 
-            result['score'] = view * like + comment * 100
+                result['score'] = view * like + comment * 100
 
-            yield result
+                yield result
+            except Exception as e:
+                pass
