@@ -4,7 +4,7 @@ import datetime
 import dateutil
 from dateutil import parser
 import uuid
-
+import re
 class ClienSpider(scrapy.Spider):
     name = "clien"
 
@@ -144,7 +144,7 @@ class ClienSpider(scrapy.Spider):
                     comment = int(comment)
                     result['comment'] = comment
                     if information.css(".list_title"):
-                        result['title'] = ''.join([e.strip() for e in information.css("::text").extract()])
+                        result['title'] = re.sub('[0-9]*$','',''.join([e.strip() for e in information.css("::text").extract()]))
                     else:
                         continue
                 elif idx ==4:
